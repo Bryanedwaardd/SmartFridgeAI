@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frost — Instrument Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --chassis: #e6e5e0;
+        --chassis-dark: #d4d2cd;
+        --recessed: #cdccc6;
+        --screen-bg: #9ba094;
+        --screen-text: #1c231b;
+
+        --ink: #111111;
+        --ink-2: #555555;
+        --ink-3: #888888;
+
+        --accent: #fa4600;
+        --accent-dark: #c23600;
+
+        --line-dark: #c2c0b8;
+        --line-light: #f4f3f0;
+
+        --r-btn: 2px;
+        --r-panel: 4px;
+
+        --outset:
+          inset 1px 1px 0px rgba(255, 255, 255, 0.9),
+          inset -1px -1px 0px rgba(0, 0, 0, 0.15),
+          1px 2px 3px rgba(0, 0, 0, 0.08);
+
+        --inset:
+          inset 1px 1px 3px rgba(0, 0, 0, 0.25),
+          inset -1px -1px 0px rgba(255, 255, 255, 0.6);
+
+        --btn-pressed: inset 2px 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        background: var(--chassis);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font-family: inherit;
+        outline: none;
+      }
+
+      .screen {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        max-width: 1400px;
+        margin: 0 auto;
+        border-left: 1px solid var(--line-light);
+        border-right: 1px solid var(--line-dark);
+        box-shadow:
+          20px 0 40px rgba(0, 0, 0, 0.05),
+          -20px 0 40px rgba(0, 0, 0, 0.05);
+      }
+
+      .statusbar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        padding: 16px 24px;
+        border-bottom: 2px solid var(--line-dark);
+        background: var(--chassis);
+        box-shadow: 0 1px 0 var(--line-light);
+      }
+      .statusbar > * {
+        flex: 1;
+        display: flex;
+        align-items: center;
+      }
+      .statusbar__brand {
+        font-weight: 800;
+        font-size: 16px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        justify-content: center;
+        gap: 6px;
+      }
+      .statusbar__meta {
+        justify-content: flex-end;
+        gap: 16px;
+      }
+
+      .lcd-text {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        color: var(--screen-text);
+      }
+      .clock-display {
+        background: var(--screen-bg);
+        padding: 4px 8px;
+        border-radius: 2px;
+        box-shadow: var(--inset);
+        font-size: 13px;
+        letter-spacing: 0.05em;
+      }
+
+      .status-light {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #333;
+        box-shadow:
+          inset 1px 1px 3px rgba(0, 0, 0, 0.5),
+          0 1px 0 rgba(255, 255, 255, 0.7);
+        position: relative;
+      }
+      .status-light.on {
+        background: #00ff41;
+        box-shadow:
+          inset 1px 1px 2px rgba(0, 0, 0, 0.3),
+          0 0 8px rgba(0, 255, 65, 0.6),
+          0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+      .conn-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-2);
+        margin-left: 6px;
+      }
+
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        background: var(--chassis);
+      }
+      .content::-webkit-scrollbar {
+        width: 0;
+      }
+
+      .view {
+        display: none;
+      }
+      .view.is-active {
+        display: block;
+        animation: snapIn 0.15s ease-out;
+      }
+      @keyframes snapIn {
+        from {
+          opacity: 0;
+          transform: scale(0.99);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .module-title {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--ink-2);
+        margin: 0 0 16px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--line-dark);
+        box-shadow: 0 1px 0 var(--line-light);
+      }
+
+      .stat-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .stat-module {
+        display: flex;
+        flex-direction: column;
+      }
+      .stat-module__label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-2);
+        margin-bottom: 6px;
+      }
+      .stat-module__screen {
+        background: var(--screen-bg);
+        border-radius: var(--r-btn);
+        padding: 12px;
+        box-shadow: var(--inset);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .stat-module__value {
+        font-size: 20px;
+        letter-spacing: -0.05em;
+      }
+      .stat-module__icon svg {
+        width: 18px;
+        height: 18px;
+        opacity: 0.5;
+      }
+
+      .list-container {
+        border-top: 1px solid var(--line-dark);
+        margin-bottom: 32px;
+      }
+      .item-row {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line-dark);
+        box-shadow: 0 1px 0 var(--line-light);
+      }
+      .item-row__icon {
+        width: 32px;
+        height: 32px;
+        background: var(--chassis-dark);
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        box-shadow: var(--inset);
+        color: var(--ink);
+      }
+      .item-row__icon svg {
+        width: 16px;
+        height: 16px;
+      }
+      .item-row__info {
+        flex: 1;
+      }
+      .item-row__name {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 4px 0;
+      }
+      .item-row__timestamp {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--ink-3);
+        margin: 0 0 6px 0;
+      }
+
+      .item-row {
+        cursor: pointer;
+      }
+      .item-row__chevron {
+        margin-left: 8px;
+        color: var(--ink-3);
+        transition: transform 0.15s;
+        flex-shrink: 0;
+      }
+      .item-row.is-open .item-row__chevron {
+        transform: rotate(90deg);
+      }
+      .item-detail {
+        display: none;
+        padding: 2px 0 12px 48px;
+        border-bottom: 1px solid var(--line-dark);
+      }
+      .item-detail.is-open {
+        display: block;
+      }
+      .item-detail__unit {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        padding: 4px 0;
+        color: var(--ink-2);
+      }
+      .item-detail__unit.stale {
+        color: var(--accent-dark, var(--accent));
+        font-weight: 700;
+      }
+      .stale-dot {
+        color: var(--accent);
+        margin-left: 4px;
+      }
+
+      .notif-banner {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: var(--accent);
+        color: white;
+        padding: 10px 14px;
+        border-radius: var(--r-btn);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 16px;
+        box-shadow: var(--outset);
+        cursor: pointer;
+      }
+      .notif-banner.is-visible {
+        display: flex;
+      }
+      .notif-banner svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+      }
+
+      .track {
+        height: 6px;
+        width: 140px;
+        background: var(--chassis-dark);
+        box-shadow: var(--inset);
+        border-radius: 1px;
+        position: relative;
+        overflow: hidden;
+      }
+      .track-fill {
+        height: 100%;
+        background: var(--ink-2);
+        border-right: 1px solid rgba(0, 0, 0, 0.2);
+      }
+      .track-fill.low {
+        background: var(--accent);
+      }
+
+      .item-row__qty {
+        font-size: 16px;
+        font-weight: 800;
+        text-align: right;
+        min-width: 40px;
+      }
+
+      .action-panel {
+        background: var(--chassis-dark);
+        padding: 24px;
+        border-radius: var(--r-panel);
+        box-shadow: var(--inset);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        border: 1px solid #c4c2bc;
+      }
+      .action-panel__text h3 {
+        font-size: 14px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 4px 0;
+      }
+      .action-panel__text p {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink-2);
+        margin: 0;
+      }
+
+      .btn-mech {
+        background: var(--chassis);
+        border: 1px solid var(--line-dark);
+        border-bottom-color: #999;
+        border-right-color: #999;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 12px 24px;
+        border-radius: var(--r-btn);
+        box-shadow: var(--outset);
+        cursor: pointer;
+        transition:
+          transform 0.05s,
+          box-shadow 0.05s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-mech:active {
+        transform: translate(1px, 1px);
+        box-shadow: var(--btn-pressed);
+        border-top-color: #999;
+        border-left-color: #999;
+        border-bottom-color: var(--line-light);
+        border-right-color: var(--line-light);
+      }
+
+      .btn-accent {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent-dark);
+        border-bottom-color: #8c2700;
+        border-right-color: #8c2700;
+        box-shadow:
+          inset 1px 1px 0px rgba(255, 255, 255, 0.4),
+          inset -1px -1px 0px rgba(0, 0, 0, 0.2),
+          1px 2px 3px rgba(0, 0, 0, 0.15);
+      }
+      .btn-accent:active {
+        background: var(--accent-dark);
+        box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.4);
+      }
+
+      .print-output {
+        background: #fdfcf8;
+        border: 1px solid var(--line-dark);
+        padding: 24px;
+        min-height: 300px;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.02);
+        position: relative;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .print-output::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 10px,
+          rgba(0, 0, 0, 0.1) 10px,
+          rgba(0, 0, 0, 0.1) 20px
+        );
+      }
+      .print-output h1,
+      .print-output h2,
+      .print-output h3 {
+        font-family: "Inter", sans-serif;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 24px 0 12px;
+        border-bottom: 2px solid var(--ink);
+        display: inline-block;
+      }
+      .print-output h1:first-child,
+      .print-output h2:first-child,
+      .print-output h3:first-child {
+        margin-top: 0;
+      }
+      .print-output ul,
+      .print-output ol {
+        padding-left: 20px;
+        margin-bottom: 20px;
+      }
+
+      .print-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 100%;
+        min-height: 240px;
+        color: var(--ink-3);
+      }
+
+      .dock {
+        flex-shrink: 0;
+        display: flex;
+        padding: 16px 24px;
+        background: var(--chassis);
+        border-top: 2px solid var(--line-dark);
+        box-shadow: inset 0 1px 0 var(--line-light);
+        gap: 8px;
+      }
+      .dock__btn {
+        flex: 1;
+        background: var(--chassis);
+        border: 1px solid var(--line-dark);
+        border-bottom-color: #999;
+        border-right-color: #999;
+        border-radius: var(--r-btn);
+        padding: 12px;
+        box-shadow: var(--outset);
+        color: var(--ink-3);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        position: relative;
+      }
+      .dock__btn::after {
+        content: "";
+        display: block;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #999;
+        box-shadow:
+          inset 1px 1px 2px rgba(0, 0, 0, 0.4),
+          0 1px 0 rgba(255, 255, 255, 0.8);
+        position: absolute;
+        top: 8px;
+        right: 12px;
+      }
+      .dock__btn svg {
+        width: 20px;
+        height: 20px;
+      }
+      .dock__btn.is-active {
+        background: var(--chassis-dark);
+        color: var(--ink);
+        box-shadow: var(--btn-pressed);
+        border-top-color: #999;
+        border-left-color: #999;
+        border-bottom-color: var(--line-light);
+        border-right-color: var(--line-light);
+        transform: translate(1px, 1px);
+      }
+      .dock__btn.is-active::after {
+        background: #00ff41;
+        box-shadow:
+          0 0 6px #00ff41,
+          inset 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .blink-block {
+        width: 12px;
+        height: 16px;
+        background: var(--ink);
+        animation: blink 1s step-end infinite;
+        display: inline-block;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      .empty-state {
+        display: none;
+        padding: 32px 0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--ink-3);
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 600px) {
+        .stat-row {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .action-panel {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .statusbar {
+          padding: 12px 16px;
+        }
+        .content {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen">
+      <div class="statusbar">
+        <div class="clock-display lcd-text" id="clock">--:--</div>
+        <div class="statusbar__brand">FROST</div>
+        <div class="statusbar__meta">
+          <div style="display: flex; align-items: center">
+            <div class="status-light" id="conn-dot"></div>
+            <span class="conn-label" id="conn-label">OFFLINE</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <section class="view is-active" data-view="home">
+          <h2 class="module-title">System Status</h2>
+
+          <div class="stat-row">
+            <div class="stat-module">
+              <span class="stat-module__label">Internal Temp</span>
+              <div class="stat-module__screen">
+                <span class="stat-module__value lcd-text">3.2°C</span>
+                <span class="stat-module__icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"
+                    ></path>
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div class="stat-module">
+              <span class="stat-module__label">Humidity</span>
+              <div class="stat-module__screen">
+                <span class="stat-module__value lcd-text">45%</span>
+                <span class="stat-module__icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div class="stat-module">
+              <span class="stat-module__label">Inventory</span>
+              <div class="stat-module__screen">
+                <span class="stat-module__value lcd-text" id="stat-items"
+                  >00</span
+                >
+                <span class="stat-module__icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="notif-banner" id="notif-banner">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              ></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span id="notif-banner-text"></span>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: baseline;
+            "
+          >
+            <h2 class="module-title" style="flex: 1">Detected Items</h2>
+            <button
+              class="btn-mech"
+              id="see-all-link"
+              style="
+                padding: 4px 8px;
+                font-size: 10px;
+                border-bottom: none;
+                box-shadow: none;
+              "
+            >
+              View All
+            </button>
+          </div>
+
+          <div class="list-container" id="preview-list"></div>
+          <div class="empty-state" id="empty-preview">
+            [ NO ITEMS DETECTED - AWAITING SCAN ]
+          </div>
+
+          <h2 class="module-title" style="margin-top: 24px">AI Processor</h2>
+          <div class="action-panel">
+            <div class="action-panel__text">
+              <h3>Meal Synthesizer</h3>
+              <p>Generate instructions based on available inventory.</p>
+            </div>
+            <button class="btn-mech btn-accent" id="teaser-btn">
+              GENERATE
+            </button>
+          </div>
+        </section>
+
+        <section class="view" data-view="inventory">
+          <h2 class="module-title">
+            Full Inventory
+            <span id="inv-count" style="float: right; font-weight: 400"
+              >SCANNING</span
+            >
+          </h2>
+          <div
+            class="list-container"
+            id="full-list"
+            style="border-top: none"
+          ></div>
+          <div class="empty-state" id="empty-full" style="display: block">
+            [ NO ITEMS DETECTED - AWAITING SCAN ]
+          </div>
+        </section>
+
+        <section class="view" data-view="recipe">
+          <h2 class="module-title">Recipe Output</h2>
+          <button
+            class="btn-mech btn-accent"
+            id="recipe-btn"
+            style="margin-bottom: 24px"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="width: 16px; height: 16px"
+            >
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
+            <span id="recipe-btn-text">EXECUTE QUERY</span>
+          </button>
+
+          <div class="print-output" id="recipe-result">
+            <div class="print-placeholder">[ WAITING FOR INPUT ]</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="dock">
+        <button class="dock__btn is-active" data-target="home">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          Home
+        </button>
+        <button class="dock__btn" data-target="inventory">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          Items
+        </button>
+        <button class="dock__btn" data-target="recipe">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+            ></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Output
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000/api";
+      const openItems = new Set(); // nama item yang dropdown-nya lagi dibuka user, bertahan lintas polling
+
+      const categories = [
+        {
+          match: [
+            "wortel",
+            "carrot",
+            "apel",
+            "apple",
+            "tomat",
+            "tomato",
+            "bawang",
+            "onion",
+            "kentang",
+            "potato",
+            "sayur",
+            "buah",
+            "vegetable",
+            "fruit",
+          ],
+          icon: '<circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path>',
+        },
+        {
+          match: ["susu", "milk", "keju", "cheese", "yogurt"],
+          icon: '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>',
+        },
+        {
+          match: [
+            "telur",
+            "egg",
+            "daging",
+            "meat",
+            "ayam",
+            "chicken",
+            "ikan",
+            "fish",
+          ],
+          icon: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line>',
+        },
+        {
+          match: ["roti", "bread", "tepung", "gandum", "wheat"],
+          icon: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>',
+        },
+      ];
+      const otherCategory = {
+        icon: '<polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline>',
+      };
+
+      function categoryFor(name) {
+        const n = name.toLowerCase();
+        return (
+          categories.find((c) => c.match.some((k) => n.includes(k))) ||
+          otherCategory
+        );
+      }
+
+      function stockLevel(count) {
+        if (count <= 1) return { pct: 20, class: "low" };
+        if (count <= 3) return { pct: 50, class: "" };
+        return { pct: 100, class: "" };
+      }
+
+      function formatMasukTime(iso) {
+        if (!iso) return null;
+        try {
+          return new Date(iso).toLocaleString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function unitRowHTML(unit, index) {
+        const masukText = formatMasukTime(unit.entered_at) || "-";
+        const staleClass = unit.is_stale ? " stale" : "";
+        const warn = unit.is_stale ? " ⚠" : "";
+        return `<div class="item-detail__unit${staleClass}">
+      <span>#${index + 1} — masuk ${masukText}</span>
+      <span>${unit.duration_human}${warn}</span>
+    </div>`;
+      }
+
+      // detail = { count, items: [{entered_at, duration_seconds, duration_human, is_stale}] } atau undefined
+      function rowHTML(name, count, detail, idPrefix) {
+        const cat = categoryFor(name);
+        const stock = stockLevel(count);
+        const units = (detail && detail.items) || [];
+        const latestText = units.length
+          ? formatMasukTime(units[units.length - 1].entered_at)
+          : null;
+        const hasStale = units.some((u) => u.is_stale);
+        const detailId = `detail-${idPrefix}`;
+        const isOpen = openItems.has(name);
+        const unitsHTML = units
+          .slice()
+          .sort((a, b) => b.duration_seconds - a.duration_seconds)
+          .map((u, i) => unitRowHTML(u, i))
+          .join("");
+
+        return `<div class="item-entry">
+      <div class="item-row${isOpen ? " is-open" : ""}" data-detail="${detailId}" data-name="${name.replace(/"/g, "&quot;")}">
+        <div class="item-row__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${cat.icon}</svg></div>
+        <div class="item-row__info">
+          <p class="item-row__name">${name}${hasStale ? '<span class="stale-dot">●</span>' : ""}</p>
+          ${latestText ? `<p class="item-row__timestamp">Masuk terakhir: ${latestText}</p>` : ""}
+          <div class="track"><div class="track-fill ${stock.class}" style="width:${stock.pct}%"></div></div>
+        </div>
+        <div class="item-row__qty lcd-text">${count.toString().padStart(2, "0")}</div>
+        <svg class="item-row__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 6 15 12 9 18"></polyline></svg>
+      </div>
+      <div class="item-detail${isOpen ? " is-open" : ""}" id="${detailId}">${unitsHTML}</div>
+    </div>`;
+      }
+
+      function attachRowToggleHandlers() {
+        document.querySelectorAll(".item-row[data-detail]").forEach((row) => {
+          row.addEventListener("click", () => {
+            const name = row.dataset.name;
+            const detail = document.getElementById(row.dataset.detail);
+            const isOpen = detail.classList.toggle("is-open");
+            row.classList.toggle("is-open", isOpen);
+            if (isOpen) {
+              openItems.add(name);
+            } else {
+              openItems.delete(name);
+            }
+          });
+        });
+      }
+
+      function renderInventory(data, details) {
+        const entries = Object.entries(data);
+        const total = entries.reduce((sum, [, c]) => sum + parseInt(c), 0);
+
+        document.getElementById("stat-items").textContent = total
+          .toString()
+          .padStart(2, "0");
+        document.getElementById("inv-count").textContent =
+          `[ ${entries.length} TYPE / ${total} TOT ]`;
+
+        const previewList = document.getElementById("preview-list");
+        const fullList = document.getElementById("full-list");
+        const emptyPreview = document.getElementById("empty-preview");
+        const emptyFull = document.getElementById("empty-full");
+        const seeAll = document.getElementById("see-all-link");
+
+        if (entries.length === 0) {
+          previewList.innerHTML = "";
+          fullList.innerHTML = "";
+          emptyPreview.style.display = "block";
+          emptyFull.style.display = "block";
+          seeAll.style.display = "none";
+          return;
+        }
+
+        emptyPreview.style.display = "none";
+        emptyFull.style.display = "none";
+        seeAll.style.display = "block";
+
+        previewList.innerHTML = entries
+          .slice(0, 4)
+          .map(([n, c], i) => rowHTML(n, c, details[n], `p${i}`))
+          .join("");
+        fullList.innerHTML = entries
+          .map(([n, c], i) => rowHTML(n, c, details[n], `f${i}`))
+          .join("");
+
+        attachRowToggleHandlers();
+      }
+
+      function setConnection(online) {
+        const dot = document.getElementById("conn-dot");
+        const label = document.getElementById("conn-label");
+        if (online) {
+          dot.classList.add("on");
+          label.textContent = "ONLINE";
+        } else {
+          dot.classList.remove("on");
+          label.textContent = "OFFLINE";
+        }
+      }
+
+      async function fetchInventory() {
+        try {
+          const [invRes, detailsRes] = await Promise.all([
+            fetch(`${API_BASE}/inventory`),
+            fetch(`${API_BASE}/inventory/details`),
+          ]);
+          const data = await invRes.json();
+          const details = await detailsRes.json();
+          renderInventory(data, details);
+          setConnection(true);
+        } catch (err) {
+          setConnection(false);
+        }
+      }
+
+      async function fetchNotifications() {
+        try {
+          const res = await fetch(`${API_BASE}/notifications`);
+          const data = await res.json();
+          const banner = document.getElementById("notif-banner");
+          const text = document.getElementById("notif-banner-text");
+
+          if (data.count > 0) {
+            const worst = data.items[0];
+            const extra =
+              data.count > 1 ? ` (+${data.count - 1} lainnya)` : "";
+            text.textContent = `${worst.item_name.toUpperCase()} sudah ${worst.duration_human} di kulkas${extra}`;
+            banner.classList.add("is-visible");
+          } else {
+            banner.classList.remove("is-visible");
+          }
+        } catch (err) {
+          // diamkan saja, jangan ganggu status koneksi utama
+        }
+      }
+
+      // Konverter Markdown -> HTML sederhana (tanpa library luar), cukup untuk
+      // format yang dipakai prompt resep: ### heading, **bold**, bullet -, dan list bernomor.
+      function markdownToHtml(md) {
+        const escapeInline = (text) =>
+          text
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/(?<!\*)\*(?!\*)(.+?)\*(?!\*)/g, "<em>$1</em>");
+
+        const lines = md.replace(/\r\n/g, "\n").split("\n");
+        let html = "";
+        let listType = null; // "ul" | "ol" | null
+
+        const closeList = () => {
+          if (listType) {
+            html += `</${listType}>`;
+            listType = null;
+          }
+        };
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+
+          if (line === "") {
+            closeList();
+            continue;
+          }
+
+          const heading = line.match(/^(#{1,4})\s+(.*)$/);
+          if (heading) {
+            closeList();
+            const level = Math.min(heading[1].length, 3); // dibatasi ke h3, CSS print-output cuma styling h1-h3
+            html += `<h${level}>${escapeInline(heading[2])}</h${level}>`;
+            continue;
+          }
+
+          const bullet = line.match(/^[-*]\s+(.*)$/);
+          if (bullet) {
+            if (listType !== "ul") {
+              closeList();
+              html += "<ul>";
+              listType = "ul";
+            }
+            html += `<li>${escapeInline(bullet[1])}</li>`;
+            continue;
+          }
+
+          const numbered = line.match(/^\d+[.)]\s+(.*)$/);
+          if (numbered) {
+            if (listType !== "ol") {
+              closeList();
+              html += "<ol>";
+              listType = "ol";
+            }
+            html += `<li>${escapeInline(numbered[1])}</li>`;
+            continue;
+          }
+
+          closeList();
+          html += `<p>${escapeInline(line)}</p>`;
+        }
+        closeList();
+        return html;
+      }
+
+      async function getRecipe() {
+        const btn = document.getElementById("recipe-btn");
+        const btnText = document.getElementById("recipe-btn-text");
+        const result = document.getElementById("recipe-result");
+
+        btn.disabled = true;
+        btnText.textContent = "PROCESSING...";
+        result.innerHTML = `<div class="print-placeholder">
+        <div class="blink-block"></div>
+        <br>
+        > SYNTHESIZING INSTRUCTIONS...
+      </div>`;
+
+        try {
+          const res = await fetch(`${API_BASE}/recommend-recipe`, {
+            method: "POST",
+          });
+          const data = await res.json();
+          result.style.opacity = 0;
+          result.innerHTML = markdownToHtml(data.recipe);
+          requestAnimationFrame(() => {
+            result.style.transition = "opacity .15s step-end";
+            result.style.opacity = 1;
+          });
+        } catch (err) {
+          result.innerHTML = `<div class="print-placeholder" style="color:var(--accent);">
+          > ERROR: CONNECTION FAILURE
+          > CHECK NETWORK PROTOCOLS
+        </div>`;
+        } finally {
+          btn.disabled = false;
+          btnText.textContent = "EXECUTE QUERY";
+        }
+      }
+
+      function switchView(name) {
+        document
+          .querySelectorAll(".view")
+          .forEach((v) =>
+            v.classList.toggle("is-active", v.dataset.view === name),
+          );
+        document
+          .querySelectorAll(".dock__btn")
+          .forEach((t) =>
+            t.classList.toggle("is-active", t.dataset.target === name),
+          );
+      }
+
+      document
+        .querySelectorAll(".dock__btn")
+        .forEach((t) =>
+          t.addEventListener("click", () => switchView(t.dataset.target)),
+        );
+      document
+        .getElementById("see-all-link")
+        .addEventListener("click", () => switchView("inventory"));
+      document.getElementById("teaser-btn").addEventListener("click", () => {
+        switchView("recipe");
+        getRecipe();
+      });
+      document
+        .getElementById("recipe-btn")
+        .addEventListener("click", getRecipe);
+
+      document
+        .getElementById("notif-banner")
+        .addEventListener("click", () => switchView("inventory"));
+
+      function updateClock() {
+        const now = new Date();
+        const hrs = now.getHours().toString().padStart(2, "0");
+        const mins = now.getMinutes().toString().padStart(2, "0");
+        document.getElementById("clock").textContent = `${hrs}:${mins}`;
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+      fetchInventory();
+      setInterval(fetchInventory, 3000);
+      fetchNotifications();
+      setInterval(fetchNotifications, 15000);
+    </script>
+  </body>
+</html>
